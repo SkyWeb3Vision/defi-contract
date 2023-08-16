@@ -1,0 +1,27 @@
+# for verify
+args.js 
+.env
+
+# Foundry
+cache/
+
+# JS
+node_modules/
+package-lock.json
+yarn.lock
+pvkey.js
+scripts/setting.js
+
+# Hardhat files
+cache_hardhat/
+artifacts/
+
+tasks/
+
+# Hardhat plugin files
+typechain-types/
+
+.openzeppelin
+abi
+build
+test
