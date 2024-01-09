@@ -56,7 +56,7 @@ contract StakingNFTFeeConverter  {
     constructor() {
         owner = msg.sender;
         lastRewardtime = 0;
-        wbnb = address(0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd);
+        wbnb = address(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
     }
 
 

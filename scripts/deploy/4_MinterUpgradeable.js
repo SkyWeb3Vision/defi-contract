@@ -8,9 +8,9 @@ async function main () {
 
   console.log("Deploying to network:", currentNetwork);
 
-  const ve = '0xa7b412eAB2CF9947E5159A9D5f9292161db8B285'
-  const voter = '0xee45cE9B945f581aE3561E8BBBE7a61404f8BFbe'
-  const rewDistro = '0x1Fb075CBDF3f0117D69E2967Cc25539C786355cE'
+  const ve = '0x8b02f1AEdcc242246ca169b96F4222F2C3819AC0'
+  const voter = '0xb6e5152608c1a6516cAb51edc4A1a2B67F27F6Eb'
+  const rewDistro = '0xd36593b502e1E7076F5F6c89c7886529708d30AB'
 
   data = await ethers.getContractFactory("MinterUpgradeable");
   input = [voter, ve, rewDistro]

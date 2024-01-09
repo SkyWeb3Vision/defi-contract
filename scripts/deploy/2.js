@@ -7,13 +7,14 @@ const currentNetwork = network.name;
 async function main () {
 
     // deployed on v1 
-    const ve = ethers.utils.getAddress("0xa7b412eAB2CF9947E5159A9D5f9292161db8B285")
-    const pairFactory = ethers.utils.getAddress("0xdf9239DD84Fff03DB61ec270F34E9bBDd6dFb19D")
-    const permissionsRegistry = ethers.utils.getAddress("0xCf8894361Eb6A953c7C47A004EEA565CD01B9881")
-    const bribeFactoryV3 = ethers.utils.getAddress("0x64278EF484Cb64AE6AC999772022294F099deB27")
+    const ve = ethers.utils.getAddress("0x8b02f1AEdcc242246ca169b96F4222F2C3819AC0")
+    const pairFactory = ethers.utils.getAddress("0x0b7795bCC47594E53c376e56c148F5fF40E97fdD")
+    const permissionsRegistry = ethers.utils.getAddress("0xC39791f251F96Fd5ACFEC64f9217594514F27228")
+    const bribeFactoryV3 = ethers.utils.getAddress("0x4630CF6dB1dCb7a9390f69CAf2762D38F5e169Da")
+    const owner = ethers.utils.getAddress("0xDf11D7fa07749BE119E630DbB7a043127c28Fb4a")
 
     console.log("Deploying to network:", currentNetwork);
-    
+
     // GAUGE FACTORY
     data = await ethers.getContractFactory("GaugeFactoryV2");
     input = [permissionsRegistry]
@@ -23,7 +24,7 @@ async function main () {
 
     // GAUGE FACTORY _ CL
     data = await ethers.getContractFactory("GaugeFactoryV2_CL");
-    input = [permissionsRegistry, '0x993Ae2b514677c7AC52bAeCd8871d2b362A9D693']
+    input = [permissionsRegistry, owner]
     GaugeFactoryV2_CL = await upgrades.deployProxy(data,input, {initializer: 'initialize'});
     txDeployed = await GaugeFactoryV2_CL.deployed();
     console.log("GaugeFactoryV2_CL: ", GaugeFactoryV2_CL.address)

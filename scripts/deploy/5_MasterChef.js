@@ -8,8 +8,8 @@ async function main () {
 
   console.log("Deploying to network:", currentNetwork);
 
-  const wbnb = ethers.utils.getAddress("0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd") 
-  const nft = ethers.utils.getAddress("0x3138BDE8C3906FE54f65092760606574F74C77B6")
+  const wbnb = ethers.utils.getAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270") 
+  const nft = ethers.utils.getAddress("0xBf598Fd11E19F2e2BBCFbE834d00c4ef15702B14")
 
   data = await ethers.getContractFactory("MasterChef");
   MasterChef = await data.deploy(wbnb, nft);

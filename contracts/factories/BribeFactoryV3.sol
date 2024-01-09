@@ -35,11 +35,8 @@ contract BribeFactoryV3 is OwnableUpgradeable {
         voter = _voter;
         
         //bribe default tokens
-        defaultRewardToken.push(address(0x835d0973B272a9a52d032DE35037AE56C67eF18a));   // $sky
-        defaultRewardToken.push(address(0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd));   // $wbnb
-        // defaultRewardToken.push(address());   // $usdc
-        // defaultRewardToken.push(address());   // $busd
-        // defaultRewardToken.push(address());   // $usdt
+        defaultRewardToken.push(address(0x2E881bb9B5414877d7405A148b6b0080A9cba6d8));   // $sky
+        defaultRewardToken.push(address(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270));   // $wbnb
 
         // registry to check accesses
         permissionsRegistry = IPermissionsRegistry(_permissionsRegistry);
@@ -54,10 +51,10 @@ contract BribeFactoryV3 is OwnableUpgradeable {
 
         Bribe lastBribe = new Bribe(_owner,voter,address(this), _type);
 
-        if(_token0 != address(0)) lastBribe.addRewardToken(_token0);  
-        if(_token1 != address(0)) lastBribe.addRewardToken(_token1); 
+        if(_token0 != address(0)) lastBribe.addReward(_token0);  
+        if(_token1 != address(0)) lastBribe.addReward(_token1); 
 
-        lastBribe.addRewardTokens(defaultRewardToken);      
+        lastBribe.addRewards(defaultRewardToken);      
          
         last_bribe = address(lastBribe);
         _bribes.push(last_bribe);

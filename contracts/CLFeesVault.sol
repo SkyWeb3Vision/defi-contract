@@ -45,7 +45,7 @@ contract CLFeesVault {
     address public gammaRecipient;
     address public dibs;
     address public smpStakingConverter;
-    address public pairFactoryClassic = address(0xdf9239DD84Fff03DB61ec270F34E9bBDd6dFb19D);
+    address public pairFactoryClassic = address(0x0b7795bCC47594E53c376e56c148F5fF40E97fdD);
     IPermissionsRegistry public permissionsRegsitry;
 
     mapping(address => bool) public isHypervisor;           //address   =>  boolean         check if caller is gamma strategy. Hypervisor calls updatedFees

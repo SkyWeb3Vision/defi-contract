@@ -8,7 +8,7 @@ async function main () {
 
   console.log("Deploying to network:", currentNetwork);
 
-  const veSky = '0xa7b412eAB2CF9947E5159A9D5f9292161db8B285'
+  const veSky = '0x8b02f1AEdcc242246ca169b96F4222F2C3819AC0'
 
   data = await ethers.getContractFactory("RewardsDistributorV2");
   RewardsDistributorV2 = await data.deploy(veSky);

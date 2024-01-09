@@ -1,13 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity ^0.8.11;
 
 import "./interfaces/IMinter.sol";
 import "./interfaces/IVoter.sol";
 import "./interfaces/IVotingEscrow.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import './libraries/Math.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
+
+
+interface IERC20Ext {
+    function name() external returns(string memory);
+    function symbol() external returns(string memory);
+}
 
 contract Bribe is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -23,13 +31,13 @@ contract Bribe is ReentrancyGuard {
         uint256 lastUpdateTime; 
     }
 
-    mapping(address => mapping(uint256 => Reward)) public rewardData;  // token -> startTimestamp -> Reward
+    mapping(address => mapping(uint => Reward)) public rewardData;  // token -> startTimestamp -> Reward
     mapping(address => bool) public isRewardToken;
     address[] public rewardTokens;
     address public voter;
-    address public immutable bribeFactory;
+    address public bribeFactory;
     address public minter;
-    address public immutable ve;
+    address public ve;
     address public owner;
 
     string public TYPE;
@@ -39,7 +47,7 @@ contract Bribe is ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public userTimestamp;
 
     //uint256 private _totalSupply;
-    mapping(uint256 => uint256) private _totalSupply;
+    mapping(uint256 => uint256) public _totalSupply;
     mapping(address => mapping(uint256 => uint256)) private _balances; //owner -> timestamp -> amount
 
 
@@ -50,7 +58,7 @@ contract Bribe is ReentrancyGuard {
         voter = _voter;
         bribeFactory = _bribeFactory;
         firstBribeTimestamp = 0;
-        ve = IVoter(_voter).ve();
+        ve = IVoter(_voter)._ve();
         minter = IVoter(_voter).minter();
         require(minter != address(0));
         owner = _owner;
@@ -58,12 +66,12 @@ contract Bribe is ReentrancyGuard {
     }
 
     /// @notice get the current epoch 
-    function getEpochStart() public view returns(uint256){
+    function getEpochStart() public view returns(uint){
         return IMinter(minter).active_period();
     }
 
     /// @notice get next epoch (where bribes are saved)
-    function getNextEpochStart() public view returns(uint256){
+    function getNextEpochStart() public view returns(uint){
         return getEpochStart() + WEEK;
     }
 
@@ -100,13 +108,13 @@ contract Bribe is ReentrancyGuard {
         return _balances[_owner][_timestamp];
     }
 
-    /// @notice get the balance of an owner in the current epoch
+    /// @notice get the balance of a owner in the current epoch
     function balanceOfOwner(address _owner) public view returns (uint256) {
         uint256 _timestamp = getNextEpochStart();
         return _balances[_owner][_timestamp];
     }
 
-    /// @notice get the balance of an owner given a timestamp
+    /// @notice get the balance of a owner given a timestamp
     function balanceOfOwnerAt(address _owner, uint256 _timestamp) public view returns (uint256) {
         return _balances[_owner][_timestamp];
     }
@@ -114,8 +122,8 @@ contract Bribe is ReentrancyGuard {
 
     /// @notice Read earned amount given a tokenID and _rewardToken
     function earned(uint256 tokenId, address _rewardToken) public view returns(uint256){
-        uint256 k = 0;
-        uint256 reward = 0;
+        uint k = 0;
+        uint reward = 0;
         uint256 _endTimestamp = IMinter(minter).active_period(); // claim until current epoch
         address _owner = IVotingEscrow(ve).ownerOf(tokenId);
         uint256 _userLastTime = userTimestamp[_owner][_rewardToken];
@@ -143,8 +151,8 @@ contract Bribe is ReentrancyGuard {
 
     /// @notice read earned amounts given an address and the reward token
     function earned(address _owner, address _rewardToken) public view returns(uint256){
-        uint256 k = 0;
-        uint256 reward = 0;
+        uint k = 0;
+        uint reward = 0;
         uint256 _endTimestamp = IMinter(minter).active_period(); // claim until current epoch
         uint256 _userLastTime = userTimestamp[_owner][_rewardToken];
         
@@ -171,12 +179,15 @@ contract Bribe is ReentrancyGuard {
 
     /// @notice Read earned amount given address and reward token, returns the rewards and the last user timestamp (used in case user do not claim since 50+epochs)
     function earnedWithTimestamp(address _owner, address _rewardToken) private view returns(uint256,uint256){
-        uint256 k = 0;
-        uint256 reward = 0;
+        uint k = 0;
+        uint reward = 0;
         uint256 _endTimestamp = IMinter(minter).active_period(); // claim until current epoch
         uint256 _userLastTime = userTimestamp[_owner][_rewardToken];
         
-        
+        if(_endTimestamp == _userLastTime){
+            return (0, _userLastTime);
+        }
+
         // if user first time then set it to first bribe - week to avoid any timestamp problem
         if(_userLastTime < firstBribeTimestamp){
             _userLastTime = firstBribeTimestamp - WEEK;
@@ -207,11 +218,11 @@ contract Bribe is ReentrancyGuard {
     }
 
     /// @notice get the rewards for token
-    function rewardPerToken(address _rewardsToken, uint256 _timestamp) public view returns (uint256) {
-        if (_totalSupply[_timestamp] == 0) {
-            return rewardData[_rewardsToken][_timestamp].rewardsPerEpoch;
+    function rewardPerToken(address _rewardsToken, uint256 _timestmap) public view returns (uint256) {
+        if (_totalSupply[_timestmap] == 0) {
+            return rewardData[_rewardsToken][_timestmap].rewardsPerEpoch;
         }
-        return rewardData[_rewardsToken][_timestamp].rewardsPerEpoch * 1e18 / _totalSupply[_timestamp];
+        return rewardData[_rewardsToken][_timestmap].rewardsPerEpoch * 1e18 / _totalSupply[_timestmap];
     }
 
  
@@ -221,7 +232,7 @@ contract Bribe is ReentrancyGuard {
     /// @dev    called on voter.vote() or voter.poke()
     ///         we save into owner "address" and not "tokenID". 
     ///         Owner must reset before transferring token
-    function deposit(uint256 amount, uint256 tokenId) external nonReentrant {
+    function _deposit(uint256 amount, uint256 tokenId) external nonReentrant {
         require(amount > 0, "Cannot stake 0");
         require(msg.sender == voter);
         uint256 _startTimestamp = IMinter(minter).active_period() + WEEK;
@@ -237,7 +248,7 @@ contract Bribe is ReentrancyGuard {
 
     /// @notice User votes withdrawal 
     /// @dev    called on voter.reset()
-    function withdraw(uint256 amount, uint256 tokenId) external nonReentrant {
+    function _withdraw(uint256 amount, uint256 tokenId) public nonReentrant {
         require(amount > 0, "Cannot withdraw 0");
         require(msg.sender == voter);
         uint256 _startTimestamp = IMinter(minter).active_period() + WEEK; 
@@ -255,7 +266,7 @@ contract Bribe is ReentrancyGuard {
     }
 
     /// @notice Claim the TOKENID rewards
-    function getReward(uint256 tokenId, address[] memory tokens) external nonReentrant  {
+    function getReward(uint tokenId, address[] memory tokens) external nonReentrant  {
         require(IVotingEscrow(ve).isApprovedOrOwner(msg.sender, tokenId));
         uint256 _userLastTime;
         uint256 reward = 0;
@@ -290,7 +301,7 @@ contract Bribe is ReentrancyGuard {
     }
 
     /// @notice Claim rewards from voter
-    function getRewardForOwner(uint256 tokenId, address[] memory tokens) public nonReentrant  {
+    function getRewardForOwner(uint tokenId, address[] memory tokens) public nonReentrant  {
         require(msg.sender == voter);
         uint256 _userLastTime;
         uint256 reward = 0;
@@ -349,18 +360,18 @@ contract Bribe is ReentrancyGuard {
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     /// @notice add rewards tokens
-    function addRewardTokens(address[] memory _rewardsToken) public onlyAllowed {
-        uint256 i = 0;
+    function addRewards(address[] memory _rewardsToken) public onlyAllowed {
+        uint i = 0;
         for(i; i < _rewardsToken.length; i++){
-           _addRewardToken(_rewardsToken[i]);
+           _addReward(_rewardsToken[i]);
         }
     }
 
     /// @notice add a single reward token
-    function addRewardToken(address _rewardsToken) public onlyAllowed {
-        _addRewardToken(_rewardsToken);
+    function addReward(address _rewardsToken) public onlyAllowed {
+        _addReward(_rewardsToken);
     }
-    function _addRewardToken(address _rewardsToken) internal {
+    function _addReward(address _rewardsToken) internal {
         if(!isRewardToken[_rewardsToken]){
             isRewardToken[_rewardsToken] = true;
             rewardTokens.push(_rewardsToken);
@@ -403,16 +414,19 @@ contract Bribe is ReentrancyGuard {
     }
 
     /// @notice Set a new Owner
-    event SetOwner(address indexed _owner);
     function setOwner(address _owner) external onlyAllowed {
         require(_owner != address(0));
         owner = _owner;
-        emit SetOwner(_owner);
     }
 
 
 
     /* ========== MODIFIERS ========== */
+
+    modifier onlyOwner() {
+        require(owner == msg.sender);
+        _;
+    }
 
     modifier onlyAllowed() {
         require( (msg.sender == owner || msg.sender == bribeFactory), "permission is denied!" );
@@ -422,9 +436,9 @@ contract Bribe is ReentrancyGuard {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(address indexed rewardToken, uint256 reward, uint256 startTimestamp);
+    event RewardAdded(address rewardToken, uint256 reward, uint256 startTimestamp);
     event Staked(uint256 indexed tokenId, uint256 amount);
     event Withdrawn(uint256 indexed tokenId, uint256 amount);
     event RewardPaid(address indexed user,address indexed rewardsToken,uint256 reward);
-    event Recovered(address indexed token, uint256 amount);
+    event Recovered(address token, uint256 amount);
 }
